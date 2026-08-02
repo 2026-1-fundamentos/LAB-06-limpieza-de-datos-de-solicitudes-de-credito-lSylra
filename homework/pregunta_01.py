@@ -3,6 +3,10 @@ Escriba el codigo que ejecute la accion solicitada en la pregunta.
 """
 
 
+from email.mime import base
+import pandas as pd
+
+
 def pregunta_01():
     """
     Realice la limpieza del archivo "files/input/solicitudes_de_credito.csv".
@@ -15,25 +19,40 @@ def pregunta_01():
     """
     import pandas as pd
     import os
-
-    dataframe = pd.read_csv("files/input/solicitudes_de_credito.csv", index_col=0, sep=";")
-    dataframe.dropna(axis=0, how="any", inplace=True)
-
+    base=pd.read_csv("files/input/solicitudes_de_credito.csv", sep=";")
+    base.drop(columns=["Unnamed: 0"], inplace=True)
+    base_1=base.copy()
+    base_1=base_1.dropna()
+    base_1=base_1.drop_duplicates()
+    columnas_texto=["sexo","tipo_de_emprendimiento","idea_negocio","línea_credito"]
+    for col in columnas_texto:
+        base_1[col]=(base_1[col].str.lower()
+                    .str.replace(r'[-_]'," ", regex=True)
+                    .str.strip())
+    base_1["barrio"]=base_1["barrio"].str.lower().str.replace(r'[-_]'," ", regex=True)
+    columnas_numericas=["comuna_ciudadano","estrato"]
+    for col in columnas_numericas:
+        base_1[col]=base_1[col].apply(lambda x: str(int(x)))
    
-    dataframe["sexo"] = dataframe["sexo"].str.lower()
-    dataframe["monto_del_credito"] = (dataframe["monto_del_credito"].str.replace("$", "", regex=False).str.replace(",", "", regex=False).astype(float))
-    dataframe["fecha_de_beneficio"] = pd.to_datetime(dataframe["fecha_de_beneficio"],dayfirst=True, format="mixed", errors="coerce")
+    base_1["fecha_de_beneficio"]=(base_1["fecha_de_beneficio"]
+                                  .str.replace("/","-")
+                                  .str.replace(
+                                      r'^(\d{1,2})-(\d{1,2})-(\d{4})$',
+                                      r'\3-\2-\1',                      
+                                      regex=True))
 
-    # Unificación de categorías
-    columnas_a_unificar = ["tipo_de_emprendimiento","idea_negocio","barrio","línea_credito"]
+    base_1["fecha_de_beneficio"]=pd.to_datetime(base_1["fecha_de_beneficio"], format="%Y-%m-%d",errors="coerce")
 
-    for columna in columnas_a_unificar:
-        dataframe[columna] = dataframe[columna].str.lower().str.replace(r"[ .-]", "_", regex=True).str.strip()
-
-    dataframe.drop_duplicates(inplace=True)
-
-    # Crear el directorio de salida si no existe
-    output_dir = "files/output"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    dataframe.to_csv("files/output/solicitudes_de_credito.csv", sep=";", header=True, index=False)
+    base_1["monto_del_credito"]=(base_1["monto_del_credito"].
+                                 str.replace(r'[$,]',"",regex=True).
+                                 apply(lambda x: float(x)))
+    base_1=base_1.drop_duplicates()
+    def guardar_datos(df):
+        carpeta_salida="files/output"
+        if not os.path.exists(carpeta_salida):
+            os.makedirs(carpeta_salida)
+        ruta_completa=os.path.join(carpeta_salida,"solicitudes_de_credito.csv")
+        df.to_csv(ruta_completa,sep=';',index=False, encoding='utf-8')
+    guardar_datos(base_1)
+    base_2=pd.read_csv("files/output/solicitudes_de_credito.csv", sep=";")
+    conteo = base_1["barrio"].value_counts()
