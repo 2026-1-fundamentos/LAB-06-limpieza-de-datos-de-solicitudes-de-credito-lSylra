@@ -19,7 +19,7 @@ def pregunta_01():
     dataframe = pd.read_csv("files/input/solicitudes_de_credito.csv", index_col=0, sep=";")
     dataframe.dropna(axis=0, how="any", inplace=True)
 
-    # Limpieza de las variables
+   
     dataframe["sexo"] = dataframe["sexo"].str.lower()
     dataframe["monto_del_credito"] = (dataframe["monto_del_credito"].str.replace("$", "", regex=False).str.replace(",", "", regex=False).astype(float))
     dataframe["fecha_de_beneficio"] = pd.to_datetime(dataframe["fecha_de_beneficio"],dayfirst=True, format="mixed", errors="coerce")
